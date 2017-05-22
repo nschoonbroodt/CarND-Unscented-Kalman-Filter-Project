@@ -108,6 +108,45 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+  
+private:
+  // number of sigma points
+  int n_sigma_;
+  
+  // Measurement covariance matrixes
+  MatrixXd R_radar_;
+  MatrixXd R_lidar_;
+  
+  // Xsig_pred - mean(Xsig_pred) --> used in predict and update, added as a member for caching result
+  MatrixXd Xsig_minus_x_;
+  
+  // Members used in Update step
+  MatrixXd Zsig_pred_;
+  
+  /**
+   * Normalize angle between -Pi and Pi
+   * @param angle The angle to be normalized
+   * @return the normalized angle
+   */
+  double NormalizeAngle(double angle);
+  
+  /**
+   * Normalize angles values from a vector "close" to the first value_comp
+   * @param angle_vector the list of angle to normalized
+   * @return a vector of angle arround the first value_comp
+   *
+   * Example:
+   *   angle_vector = [PI-0.1, PI -PI+0.1] -> [PI-0.1, PI, PI+0.1]
+   */
+  VectorXd NormalizeAngleArround(const VectorXd &angle_vector);
+  
+  /**
+   * Common part of the Update step
+   * @param Zsig_minus_z predicted sigma measurement minus mean of predicted measurement
+   * @return NIS value
+   */
+   double UpdateCommon(const VectorXd &z, const MatrixXd &R);
+  
 };
 
 #endif /* UKF_H */
