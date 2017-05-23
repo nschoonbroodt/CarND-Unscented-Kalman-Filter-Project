@@ -145,7 +145,7 @@ private:
    * @param Zsig_minus_z predicted sigma measurement minus mean of predicted measurement
    * @return NIS value
    */
-   double UpdateCommon(const VectorXd &z, const MatrixXd &R);
+   double UpdateCommon(const VectorXd &z, const MeasurementPackage::SensorType type);
   
 };
 

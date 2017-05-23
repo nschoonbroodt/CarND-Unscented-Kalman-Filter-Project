@@ -30,11 +30,11 @@ UKF::UKF() {
   // Process noise standard deviation longitudinal acceleration in m/s^2
   // Value setted according to the discussion in the lessons (max expected: 6m/s^2 / 2)
   // And verified by monitoring the NIS
-  std_a_ = 3.;
+  std_a_ = 1.;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   // Value setted by monitoring the NIS value, and thinking about the rotation rate of vehicle
-  std_yawdd_ = M_PI/16.;
+  std_yawdd_ = M_PI/8;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -84,7 +84,7 @@ UKF::UKF() {
   R_radar_ << std_radr_, 0,           0,
               0,         std_radphi_, 0,
               0,         0,           std_radrd_;
-  R_radar_ = R_radar_*R_radar_; // works because diagonal
+  //R_radar_ = R_radar_*R_radar_; // works because diagonal
   
   R_lidar_ = MatrixXd(2,2);
   R_lidar_ << std_laspx_, 0,
@@ -141,11 +141,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     x_ << px, py, v, yaw, yaw_d;
     
     // initial state covariance matrix, ok confidence on px,py, large uncertainty on speed, yaw, yaw speed
-    P_ << 1, 0, 0,  0,  0,
-          0, 1, 0,  0,  0,
-          0, 0, 10, 0,  0,
-          0, 0, 0,  10, 0,
-          0, 0, 0,  0,  10;
+    P_ << 0.0225, 0,      0, 0, 0,
+          0,      0.0225, 0, 0, 0,
+          0,      0,      5, 0, 0,
+          0,      0,      0, 1, 0,
+          0,      0,      0, 0, 0.5;
     
     is_initialized_ = true;
     
@@ -264,7 +264,7 @@ void UKF::Prediction(double delta_t) {
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
-  TODO:
+  DONE:
 
   Complete this function! Use lidar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
@@ -280,7 +280,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   }
   
   // Common update step
-  NIS_laser_ = UpdateCommon(meas_package.raw_measurements_, R_lidar_);
+  NIS_laser_ = UpdateCommon(meas_package.raw_measurements_, MeasurementPackage::LASER);
 }
 
 /**
@@ -289,7 +289,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
   /**
-  TODO:
+  DONE:
 
   Complete this function! Use radar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
@@ -304,7 +304,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     px  = Xsig_pred_(0,i);
     py  = Xsig_pred_(1,i);
     v   = Xsig_pred_(2,i);
-    yaw = Xsig_pred_(3,i);    
+    yaw = Xsig_pred_(3,i);
+    
+    if (fabs(px) < 1e-4 && fabs(py) < 1e-4) {
+      px = px>0 ? 1e-4:-1e-4;
+      py = py>0 ? 1e-4:-1e-4;
+    }
     
     double rho, phi, rho_d;
     rho = sqrt(px*px + py*py);
@@ -313,26 +318,32 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     
     Zsig_pred_.col(i) << rho, phi, rho_d;
   }
+  Zsig_pred_.row(1) = NormalizeAngleArround(Zsig_pred_.row(1));
   
   // Common update step
-  NIS_radar_ = UpdateCommon(meas_package.raw_measurements_, R_radar_);
+  NIS_radar_ = UpdateCommon(meas_package.raw_measurements_, MeasurementPackage::RADAR);
   
 }
 
 // This function handle steps that are common in update function
 // (everything after the Zsig_pred computation)
-double UKF::UpdateCommon(const VectorXd &z, const MatrixXd &R) {
+double UKF::UpdateCommon(const VectorXd &z, const MeasurementPackage::SensorType type) {
   // predicted mean, covariance
   VectorXd z_pred = Zsig_pred_ * weights_;
   
   // TODO refactor this (identical with predict)
   MatrixXd Zsig_minus_z_pred = Zsig_pred_.colwise() - z_pred;
+
   MatrixXd S = MatrixXd(z_pred.size(), z_pred.size());
   S.fill(0.);
   for (int i=0; i<n_sigma_; ++i) {
     S += weights_(i) * Zsig_minus_z_pred.col(i) * Zsig_minus_z_pred.col(i).transpose();
   }
-  S += R;
+  if (type == MeasurementPackage::LASER) {
+    S += R_lidar_;
+  } else {
+    S += R_radar_;
+  }
   
   // Cross corelation matrix
   MatrixXd T = MatrixXd(n_x_, z_pred.size());
@@ -347,6 +358,12 @@ double UKF::UpdateCommon(const VectorXd &z, const MatrixXd &R) {
   
   // update state and covariance matrix
   VectorXd Z_k1_minus_zk1k = (z - z_pred);
+  
+  // Normalize angle if radar
+  if (type == MeasurementPackage::RADAR) {
+    Z_k1_minus_zk1k(1) = NormalizeAngle(Z_k1_minus_zk1k(1));
+  }
+  
   x_ += K * Z_k1_minus_zk1k;
   x_(3) = NormalizeAngle(x_(3));
   
