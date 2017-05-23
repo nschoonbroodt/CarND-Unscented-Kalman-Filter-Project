@@ -1,6 +1,37 @@
 # Unscented Kalman Filter Project Starter Code
 Self-Driving Car Engineer Nanodegree Program
 
+## Results
+
+With the current setting, I get a RMSE below the rubric threshold (My RMSE on the test set is [0.080, 0.090,   0.333, 0.249]) This result is better than the results I had with the Extended KF (which is expected)
+
+Here is the plot of my results (you can find an intearctive version [here](https://plot.ly/~2PetitsVerres/7/)
+
+![Unscented KF results](images/result.png)
+
+### NIS value
+
+The NIS value for both sensors is below the expected threshold (with respect with their degree of freedom) for more than 95% of the time. For the LIDAR, it is close to this mark of 95%, indicating that the tuning is probably close to a good value.
+
+### Results using only one sensors
+
+When using only one sensor, the RMSE increase (Radar only: [0.46, 0.53, 0.38, 0.44], Lidar only: [0.16, 0.15, 0.40, 0.24]), indicating that, as expected, the sensor fusion works better than one sensor only, both sensor giving additional information about the system state.
+
+Here are the plots of the single sensors results (also available [here (radar)]() and [here (lidar)]()):
+
+![Radar only][images/radar.png]
+![Lidar only][images/lidar.png]
+
+
+## Implementation detail
+
+One important thing to handle in this project was the wrapping of the different angle. Angle in the state are wrapped between -pi and pi, as expected, but at some points, like when computing the mean predicted state, or the mean predicted measurement, there is a weighted average of angle that is computed. When doing so, if we have a weighted average, we must ensure that the angles used as input of the average are not wrapped.
+
+For example, let's say that we have two angles to average with .5 weight for each, and the angles are close to pi. If they are for example [pi-eps, pi+eps], if they are normalized before the average, they become [pi-eps, -pi+eps] and the average becomes 0, where in fact it should be pi. To handle this problem, I have created a function UKF::NormalizeAngleArround(VectorXd A) that takes a vector of angles and normalize all of them between A0+pi and A0-pi, where A0 is the first vector element.
+
+Apart from this detail, I think that my implementation is relatively straightforward.
+
+
 ---
 
 ## Dependencies
