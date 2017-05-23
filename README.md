@@ -19,9 +19,9 @@ When using only one sensor, the RMSE increase (Radar only: [0.46, 0.53, 0.38, 0.
 
 Here are the plots of the single sensors results (also available [here (radar)]() and [here (lidar)]()):
 
-![Radar only][/images/radar.png]
+![Radar only](/images/radar.png)
 
-![Lidar only][/images/lidar.png]
+![Lidar only](/images/lidar.png)
 
 
 ## Implementation detail
