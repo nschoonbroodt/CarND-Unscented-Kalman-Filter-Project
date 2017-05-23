@@ -7,7 +7,7 @@ With the current setting, I get a RMSE below the rubric threshold (My RMSE on th
 
 Here is the plot of my results (you can find an intearctive version [here](https://plot.ly/~2PetitsVerres/7/)
 
-![Unscented KF results](images/result.png)
+![Unscented KF results](/images/results.png)
 
 ### NIS value
 
@@ -19,8 +19,9 @@ When using only one sensor, the RMSE increase (Radar only: [0.46, 0.53, 0.38, 0.
 
 Here are the plots of the single sensors results (also available [here (radar)]() and [here (lidar)]()):
 
-![Radar only][images/radar.png]
-![Lidar only][images/lidar.png]
+![Radar only][/images/radar.png]
+
+![Lidar only][/images/lidar.png]
 
 
 ## Implementation detail
